@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace L01_2021RR650.Controllers
 {
@@ -36,7 +37,19 @@ namespace L01_2021RR650.Controllers
         [Route("/Usuarios")]
         public IActionResult Usuarios()
         {
-            List<usuarios> usuarios = (from u in _contexto.usuarios select u).ToList();
+            var usuarios = (from u in _contexto.usuarios
+                            join r in _contexto.roles
+                            on u.rolId equals r.rolId
+                            select new
+                            {
+                                u.usuarioId,
+                                u.rolId,
+                                r.rol,
+                                u.nombreUsuario,
+                                u.clave,
+                                u.nombre,
+                                u.apellido
+                            }).ToList();
 
             return Ok(usuarios);
         }
@@ -45,7 +58,20 @@ namespace L01_2021RR650.Controllers
         [Route("/UsuarioPorId")]
         public IActionResult UsuarioPorId(int usuarioId)
         {
-            usuarios? usuario = (from u in _contexto.usuarios where u.usuarioId == usuarioId select u).FirstOrDefault();
+            var usuario = (from u in _contexto.usuarios
+                            join r in _contexto.roles
+                            on u.rolId equals r.rolId
+                            where u.usuarioId == usuarioId
+                            select new
+                            {
+                                u.usuarioId,
+                                u.rolId,
+                                r.rol,
+                                u.nombreUsuario,
+                                u.clave,
+                                u.nombre,
+                                u.apellido
+                            }).FirstOrDefault();
 
             if (usuario == null)
             {
@@ -59,7 +85,20 @@ namespace L01_2021RR650.Controllers
         [Route("/UsuariosPorNombre")]
         public IActionResult UsuariosPorNombre(string nombre)
         {
-            List<usuarios> usuarios = (from u in _contexto.usuarios where (u.nombre + " " + u.apellido).Contains(nombre) select u).ToList();
+            var usuarios = (from u in _contexto.usuarios
+                            join r in _contexto.roles
+                            on u.rolId equals r.rolId
+                            where (u.nombre + " " + u.apellido).Contains(nombre)
+                            select new
+                            {
+                                u.usuarioId,
+                                u.rolId,
+                                r.rol,
+                                u.nombreUsuario,
+                                u.clave,
+                                u.nombre,
+                                u.apellido
+                            }).ToList();
 
             return Ok(usuarios);
         }
@@ -75,7 +114,44 @@ namespace L01_2021RR650.Controllers
                 return NotFound($"El rol con el id: {rolId} no fue encontrado.");
             }
 
-            List<usuarios> usuarios = (from u in _contexto.usuarios where u.rolId == rolId select u).ToList();
+            var usuarios = (from u in _contexto.usuarios
+                            join r in _contexto.roles
+                            on u.rolId equals r.rolId
+                            where u.rolId == rolId
+                            select new
+                            {
+                                u.usuarioId,
+                                u.rolId,
+                                r.rol,
+                                u.nombreUsuario,
+                                u.clave,
+                                u.nombre,
+                                u.apellido
+                            }).ToList();
+
+            return Ok(usuarios);
+        }
+
+        [HttpGet]
+        [Route("/UsuariosConMasComentarios")]
+        public IActionResult UsuariosConMasComentarios(int topUsuarios)
+        {
+            var usuarios = (from u in _contexto.usuarios
+                            join r in _contexto.roles
+                            on u.rolId equals r.rolId
+                            join c in _contexto.comentarios 
+                            on u.usuarioId equals c.usuarioId into comentarios
+                            select new
+                            {
+                                u.usuarioId,
+                                u.rolId,
+                                r.rol,
+                                u.nombreUsuario,
+                                u.clave,
+                                u.nombre,
+                                u.apellido,
+                                CantidadComentarios = comentarios.Count()
+                            }).OrderByDescending(c => c.CantidadComentarios).Take(topUsuarios).ToList();
 
             return Ok(usuarios);
         }
